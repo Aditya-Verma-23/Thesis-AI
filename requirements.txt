@@ -1,0 +1,10 @@
+ddgs==9.0.0
+fastapi==0.115.6
+httpx==0.28.1
+loguru==0.7.3
+pydantic==2.10.4
+pydantic-settings==2.7.0
+python-multipart==0.0.20
+requests==2.32.3
+tenacity==9.0.0
+uvicorn[standard]==0.32.1
