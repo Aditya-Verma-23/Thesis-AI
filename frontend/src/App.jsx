@@ -11,6 +11,8 @@ function App() {
   const [stage, setStage] = useState('');
   const [sources, setSources] = useState(['papers', 'web']);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isBackendReady, setIsBackendReady] = useState(false);
+  const [backendStatusMsg, setBackendStatusMsg] = useState('Connecting to backend...');
 
   const [recentQueries, setRecentQueries] = useState(() => {
     return JSON.parse(localStorage.getItem('thesisai_recent') || '[]');
@@ -81,6 +83,31 @@ function App() {
     }
   }, [messages, stage]);
 
+  useEffect(() => {
+    let timeoutId;
+    const checkBackend = async () => {
+      try {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch('http://localhost:8000/health', { signal: controller.signal });
+        clearTimeout(id);
+
+        if (res.ok) {
+          setIsBackendReady(true);
+        } else {
+          setBackendStatusMsg('Backend is not ready yet...');
+          timeoutId = setTimeout(checkBackend, 2000);
+        }
+      } catch (err) {
+        setBackendStatusMsg('Backend is offline. Please start it (port 8000).');
+        timeoutId = setTimeout(checkBackend, 2000);
+      }
+    };
+    checkBackend();
+
+    return () => clearTimeout(timeoutId);
+  }, []);
+
   const toggleSource = (src) => {
     setSources(prev =>
       prev.includes(src) ? prev.filter(s => s !== src) : [...prev, src]
@@ -101,6 +128,21 @@ function App() {
 
   return (
     <div className="app">
+      {!isBackendReady && (
+        <div className="backend-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.95)', zIndex: 9999,
+          display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+          color: 'white', backdropFilter: 'blur(10px)'
+        }}>
+          <div className="brand-mark" style={{ fontSize: '48px', width: '80px', height: '80px', marginBottom: '24px' }}>T</div>
+          <h2 style={{ fontSize: '24px', marginBottom: '12px', fontWeight: 600 }}>{backendStatusMsg}</h2>
+          <p style={{ color: '#94a3b8', maxWidth: '400px', textAlign: 'center' }}>
+            Run <code style={{ backgroundColor: '#1e293b', padding: '4px 8px', borderRadius: '4px' }}>python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload</code> in your terminal to start the backend.
+          </p>
+          <div className="stage-dot" style={{ marginTop: '24px', width: '12px', height: '12px' }}></div>
+        </div>
+      )}
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">T</div>
