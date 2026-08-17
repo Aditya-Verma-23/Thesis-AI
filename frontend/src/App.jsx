@@ -13,6 +13,7 @@ function App() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [backendStatusMsg, setBackendStatusMsg] = useState('Connecting to backend...');
+  const [sidebarSearch, setSidebarSearch] = useState('');
 
   const [recentQueries, setRecentQueries] = useState(() => {
     return JSON.parse(localStorage.getItem('thesisai_recent') || '[]');
@@ -149,30 +150,47 @@ function App() {
           <div className="brand-name">Thesis<em>AI</em></div>
         </div>
 
-        <button className="new-chat-btn" onClick={() => { setChatStarted(false); setMessages([]); }}>+ New chat</button>
+        <button className="new-chat-btn" onClick={() => { setChatStarted(false); setMessages([]); }}>
+          <span className="new-chat-icon">+</span> <span className="nav-label">New chat</span>
+        </button>
 
         <div className="nav-group">
-          <div className="nav-item"><span className="icon">✎</span> AI Writer</div>
-          <div className="nav-item"><span className="icon">▤</span> Library</div>
-          <div className="nav-item"><span className="icon">⚗</span> Systematic Review</div>
-          <div className="nav-item active"><span className="icon">◷</span> Recents</div>
+          <div className="nav-item"><span className="icon">✎</span> <span className="nav-label">AI Writer</span></div>
+          <div className="nav-item"><span className="icon">▤</span> <span className="nav-label">Library</span></div>
+          <div className="nav-item"><span className="icon">⚗</span> <span className="nav-label">Systematic Review</span></div>
+          <div className="nav-item active"><span className="icon">◷</span> <span className="nav-label">Recents</span></div>
         </div>
 
         <div className="nav-divider"></div>
-        <div className="sidebar-search">🔍 Search…</div>
+        <div className="sidebar-search">
+          <span className="icon">🔍</span>
+          <input
+            type="text"
+            className="nav-label"
+            placeholder="Search…"
+            value={sidebarSearch}
+            onChange={(e) => setSidebarSearch(e.target.value)}
+            style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '13px', color: 'var(--ink)' }}
+          />
+        </div>
 
-        {recentQueries.length === 0 ? (
-          <div id="recentsSidebar" className="sidebar-empty">No queries or chats yet</div>
+        {recentQueries.filter(q => q.text.toLowerCase().includes(sidebarSearch.toLowerCase())).length === 0 ? (
+          <div id="recentsSidebar" className="sidebar-empty">
+            {recentQueries.length === 0 ? "No queries or chats yet" : "No results found"}
+          </div>
         ) : (
           <div style={{ marginTop: '16px' }}>
-            {recentQueries.slice(0, 6).map((q, i) => (
-              <div key={i} className="recent-item" onClick={() => submitQuery(q.text)}>
-                <div>
-                  <div className="recent-text">{q.text}</div>
-                  <div className="recent-meta">{q.time}</div>
+            {recentQueries
+              .filter(q => q.text.toLowerCase().includes(sidebarSearch.toLowerCase()))
+              .slice(0, 6)
+              .map((q, i) => (
+                <div key={i} className="recent-item" onClick={() => submitQuery(q.text)}>
+                  <div>
+                    <div className="recent-text">{q.text}</div>
+                    <div className="recent-meta">{q.time}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </aside>
@@ -236,7 +254,7 @@ function App() {
 
                 <div className="try-row">
                   {TAB_CONFIG[activeTab].chips.map((chip, idx) => (
-                    <div key={idx} className="try-chip" onClick={() => submitQuery(chip)}>{chip}</div>
+                    <div key={idx} className="try-chip" onClick={() => setQuery(chip)}>{chip}</div>
                   ))}
                 </div>
               </div>
@@ -318,7 +336,7 @@ function App() {
         </div>
       </main>
 
-      <FilterPanel isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} />
+      <FilterPanel isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} sources={sources} toggleSource={toggleSource} />
     </div>
   );
 }

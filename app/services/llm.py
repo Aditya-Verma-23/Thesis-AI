@@ -16,7 +16,7 @@ from app.models import Citation
 SYSTEM_PROMPT = """You are ThesisAI, a research assistant. Answer the user's question using ONLY \
 the numbered sources provided below. Cite claims inline using bracketed numbers like [1] or [2][3] \
 that match the source list. If the sources don't cover something, say so plainly instead of guessing. \
-Write in clear, well-structured prose suitable for a literature review. Do not invent sources or facts."""
+Write your ENTIRE response strictly as a single, continuous paragraph suitable for a literature review. Do not use line breaks, bullet points, or multiple paragraphs. Do not invent sources or facts."""
 
 
 def _format_sources(citations: list[Citation]) -> str:

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const QUALITY_STEPS = ['Q1', 'Q2', 'Q3', 'Q4', 'All'];
 
-function FilterPanel({ isOpen, onClose, onFiltersChange, initialFilters }) {
+function FilterPanel({ isOpen, onClose, onFiltersChange, initialFilters, sources, toggleSource }) {
   // State for Accordions
   const [expanded, setExpanded] = useState({
     citations: true,
@@ -79,6 +79,9 @@ function FilterPanel({ isOpen, onClose, onFiltersChange, initialFilters }) {
 
   // Helper for the Journal Quality step slider visual
   const qualPct = (journalQuality / (QUALITY_STEPS.length - 1)) * 100;
+
+  const isPapersEnabled = sources ? sources.includes('papers') : dbMain.researchPapers;
+  const isWebEnabled = sources ? sources.includes('web') : dbMain.webSearches;
 
   return (
     <>
@@ -185,11 +188,14 @@ function FilterPanel({ isOpen, onClose, onFiltersChange, initialFilters }) {
               <div className="fp-toggle-row">
                 <span className="fp-db-header-label">Research papers</span>
                 <label className="fp-toggle-switch">
-                  <input type="checkbox" checked={dbMain.researchPapers} onChange={(e) => setDbMain(p => ({...p, researchPapers: e.target.checked}))} />
+                  <input type="checkbox" checked={isPapersEnabled} onChange={(e) => {
+                    if (toggleSource) toggleSource('papers');
+                    else setDbMain(p => ({...p, researchPapers: e.target.checked}));
+                  }} />
                   <span className="fp-toggle-track"><span className="fp-toggle-thumb"></span></span>
                 </label>
               </div>
-              {dbMain.researchPapers && (
+              {isPapersEnabled && (
                 <div className="fp-internet-filter visible">
                   <div className="fp-checkbox-list">
                     <label className="fp-cb-label">
@@ -221,11 +227,14 @@ function FilterPanel({ isOpen, onClose, onFiltersChange, initialFilters }) {
                 <div className="fp-toggle-row">
                   <span className="fp-toggle-label">Web Searches</span>
                   <label className="fp-toggle-switch">
-                    <input type="checkbox" checked={dbMain.webSearches} onChange={(e) => setDbMain(p => ({...p, webSearches: e.target.checked}))} />
+                    <input type="checkbox" checked={isWebEnabled} onChange={(e) => {
+                      if (toggleSource) toggleSource('web');
+                      else setDbMain(p => ({...p, webSearches: e.target.checked}));
+                    }} />
                     <span className="fp-toggle-track"><span className="fp-toggle-thumb"></span></span>
                   </label>
                 </div>
-                {dbMain.webSearches && (
+                {isWebEnabled && (
                   <div className="fp-internet-filter visible">
                     <div className="fp-internet-filter-label">Internet Filter:</div>
                     <div className="fp-checkbox-list" style={{ padding: '10px 12px', background: '#f5f5f5', borderRadius: '8px' }}>
