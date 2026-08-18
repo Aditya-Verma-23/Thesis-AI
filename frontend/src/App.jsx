@@ -116,9 +116,98 @@ function App() {
   };
 
   const submitQuery = async (text) => {
-    // Chat functionality is temporarily commented out
-    console.log("Chat functionality is disabled.");
-    return;
+    if (!text.trim()) return;
+
+    setChatStarted(true);
+    setIsLoading(true);
+    setQuery('');
+    setStage('Connecting to backend...');
+
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: text },
+      { role: 'assistant', content: '', citations: [] }
+    ]);
+
+    try {
+      const mappedSources = [];
+      if (sources.includes('papers')) {
+        mappedSources.push('arxiv', 'semantic_scholar');
+      }
+      if (sources.includes('web')) {
+        mappedSources.push('web');
+      }
+
+      const response = await fetch('http://localhost:8000/api/query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: text,
+          sources: mappedSources,
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop();
+
+        for (const part of parts) {
+          if (part.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(part.slice(6));
+
+              if (data.type === 'stage') {
+                setStage(data.message);
+              } else if (data.type === 'token') {
+                setMessages(prev => {
+                  const updated = [...prev];
+                  updated[updated.length - 1] = {
+                    ...updated[updated.length - 1],
+                    content: updated[updated.length - 1].content + data.content
+                  };
+                  return updated;
+                });
+              } else if (data.type === 'citations') {
+                setMessages(prev => {
+                  const updated = [...prev];
+                  updated[updated.length - 1] = {
+                    ...updated[updated.length - 1],
+                    citations: data.citations
+                  };
+                  return updated;
+                });
+              } else if (data.type === 'done') {
+                setStage('');
+                setIsLoading(false);
+              } else if (data.type === 'error') {
+                setStage(`Error: ${data.message}`);
+                setIsLoading(false);
+              }
+            } catch (e) {
+              console.error('Error parsing SSE event:', e);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setStage('Connection failed.');
+      setIsLoading(false);
+    }
   };
 
   const renderAnswer = (text) => {
@@ -197,7 +286,6 @@ function App() {
 
       <main className="main">
         <div className="topbar">
-          <div className="pill">🎓 ThesisAI Free</div>
           <div className="avatar">AV</div>
         </div>
 
